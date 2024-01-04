@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>FUNCTION_NAME</title>
+</head>
+<body>
+FULL_FORM
+
+<form id="responseForm">
+    <label for="response">Response:</label><br>
+    <textarea id="response" name="response"></textarea><br>
+</form>
+
+<script>
+    document.getElementById('textForm')
+        .addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const formData = {
+                FORM_DATA
+            };
+
+            fetch('https://api.webutils.xyz/FUNCTION_NAME', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                mode: 'cors',
+                body: JSON.stringify(formData)
+            })
+                .then(response => response.text())
+                .then(data => {
+                    console.log('Success:', data);
+                    document.getElementById('response').value = data
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                });
+        });
+</script>
+
+</body>
+</html>

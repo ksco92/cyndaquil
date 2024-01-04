@@ -1,16 +1,27 @@
-import {Duration, Stack, StackProps} from 'aws-cdk-lib';
+import {Duration, RemovalPolicy, Stack, StackProps,} from 'aws-cdk-lib';
 import {Construct} from 'constructs';
-import {
-    IpAddresses, SecurityGroup, SubnetType, Vpc,
-} from 'aws-cdk-lib/aws-ec2';
+import {IpAddresses, SecurityGroup, SubnetType, Vpc,} from 'aws-cdk-lib/aws-ec2';
 import {Code, Function, Runtime} from 'aws-cdk-lib/aws-lambda';
 import {readdirSync} from 'fs';
 import {ManagedPolicy, Role, ServicePrincipal} from 'aws-cdk-lib/aws-iam';
-import {LambdaIntegration, RestApi} from 'aws-cdk-lib/aws-apigateway';
+import {Cors, LambdaIntegration, RestApi} from 'aws-cdk-lib/aws-apigateway';
 import {ARecord, PublicHostedZone, RecordTarget} from 'aws-cdk-lib/aws-route53';
 import {Certificate, CertificateValidation} from 'aws-cdk-lib/aws-certificatemanager';
-import {ApiGatewayDomain} from 'aws-cdk-lib/aws-route53-targets';
+import {ApiGatewayDomain, CloudFrontTarget} from 'aws-cdk-lib/aws-route53-targets';
+import {BlockPublicAccess, Bucket} from 'aws-cdk-lib/aws-s3';
+import {
+    AllowedMethods,
+    CfnDistribution,
+    CfnOriginAccessControl,
+    Distribution,
+    SecurityPolicyProtocol,
+    ViewerProtocolPolicy,
+} from 'aws-cdk-lib/aws-cloudfront';
+import {S3Origin} from 'aws-cdk-lib/aws-cloudfront-origins';
+import {BucketDeployment, Source} from 'aws-cdk-lib/aws-s3-deployment';
+import {Key} from 'aws-cdk-lib/aws-kms';
 import FunctionMetadata from './functionMetadata';
+import path = require('path');
 
 export default class CyndaquilStack extends Stack {
     constructor(scope: Construct, id: string, props?: StackProps) {
@@ -75,6 +86,17 @@ export default class CyndaquilStack extends Stack {
             },
             deploy: true,
             disableExecuteApiEndpoint: true,
+            defaultCorsPreflightOptions: {
+                allowOrigins: Cors.ALL_ORIGINS,
+                allowMethods: Cors.ALL_METHODS,
+                allowHeaders: [
+                    'Content-Type',
+                    'X-Amz-Date',
+                    'Authorization',
+                    'X-Api-Key',
+                    'X-Amz-Security-Token',
+                ],
+            },
         });
 
         new ARecord(this, 'APIGatewayAliasRecord', {
@@ -116,6 +138,95 @@ export default class CyndaquilStack extends Stack {
 
             const resource = api.root.addResource(functionMetadata.functionName);
             resource.addMethod('POST', new LambdaIntegration(myFunction));
+        });
+
+        /// ////////////////////////////////////////////
+        /// ////////////////////////////////////////////
+        /// ////////////////////////////////////////////
+        /// ////////////////////////////////////////////
+        // UI
+
+        const websiteBucketKey = new Key(this, 'WebsiteBucketKey');
+
+        const websiteBucket = new Bucket(this, 'WebsiteBucket', {
+            bucketName: 'cyndaquil-website-bucket',
+            encryptionKey: websiteBucketKey,
+            // encryption: BucketEncryption.S3_MANAGED,
+            publicReadAccess: false,
+            blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
+            removalPolicy: RemovalPolicy.DESTROY,
+            autoDeleteObjects: true,
+        });
+
+        websiteBucket.grantRead(new ServicePrincipal('cloudfront.amazonaws.com'));
+
+        const originAccessControl = new CfnOriginAccessControl(this, 'OriginAccessControl', {
+            originAccessControlConfig: {
+                name: 'CyndaquilOriginAccessControl',
+                originAccessControlOriginType: 's3',
+                signingBehavior: 'always',
+                signingProtocol: 'sigv4',
+            },
+        });
+
+        // const originAccessIdentity = new OriginAccessIdentity(this, 'OriginAccessIdentity');
+
+        // websiteBucket.addToResourcePolicy(new PolicyStatement({
+        //     actions: [
+        //         's3:GetObject',
+        //     ],
+        //     resources: [
+        //         websiteBucket.arnForObjects('*'),
+        //     ],
+        //     principals: [
+        //         // eslint-disable-next-line max-len
+        //         new CanonicalUserPrincipal(originAccessIdentity.
+        //         cloudFrontOriginAccessIdentityS3CanonicalUserId),
+        //     ],
+        // }));
+
+        const distribution = new Distribution(this, 'SiteDistribution', {
+            certificate,
+            defaultRootObject: 'index.html',
+            domainNames: [
+                'webutils.xyz',
+            ],
+            minimumProtocolVersion: SecurityPolicyProtocol.TLS_V1_2_2021,
+            errorResponses: [
+                {
+                    httpStatus: 403,
+                    responseHttpStatus: 403,
+                    responsePagePath: '/error.html',
+                    ttl: Duration.minutes(30),
+                },
+            ],
+            defaultBehavior: {
+                origin: new S3Origin(websiteBucket),
+                compress: true,
+                allowedMethods: AllowedMethods.ALLOW_ALL,
+                viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+            },
+        });
+
+        const cfnDistribution = distribution.node.defaultChild as CfnDistribution;
+        cfnDistribution.addPropertyOverride('DistributionConfig.Origins.0.OriginAccessControlId', originAccessControl.getAtt('Id'));
+        cfnDistribution.addOverride('Properties.DistributionConfig.Origins.0.S3OriginConfig.OriginAccessIdentity', '');
+
+        new BucketDeployment(this, 'DeployWithInvalidation', {
+            sources: [
+                Source.asset(path.join(__dirname, '../ui_compiled')),
+            ],
+            destinationBucket: websiteBucket,
+            distribution,
+            distributionPaths: [
+                '/*',
+            ],
+        });
+
+        new ARecord(this, 'SiteAliasRecord', {
+            recordName: 'webutils.xyz',
+            target: RecordTarget.fromAlias(new CloudFrontTarget(distribution)),
+            zone: publicHostedZone,
         });
     }
 }

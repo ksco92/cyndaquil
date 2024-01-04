@@ -9,3 +9,5 @@ cdk.out
 
 venv
 .idea
+
+ui_compiled/*.html

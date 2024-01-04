@@ -20,4 +20,9 @@ def query_in_clause_generator(event: dict, __: dict) -> dict:
         "isBase64Encoded": False,
         "statusCode": 200,
         "body": f"in ({formatted_strings})",
+        "headers": {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST,GET,OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type",
+        },
     }

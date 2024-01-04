@@ -2,5 +2,12 @@
     "test_event": {
         "strings": "\na\nb\nc\nd\ne\n"
     },
-    "expected_result": "in ('a','b','c','d','e')"
+    "expected_result": "in ('a','b','c','d','e')",
+    "form_fields": [
+        {
+            "name": "strings",
+            "type": "text_area",
+            "label": "Input strings:"
+        }
+    ]
 }

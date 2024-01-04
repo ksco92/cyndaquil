@@ -4,5 +4,12 @@
         "input_string": "{\"name\": \"John\", \"age\": 30}",
         "sort_keys": true
     },
-    "expected_result": "{\n    \"age\": 30,\n    \"name\": \"John\"\n}"
+    "expected_result": "{\n    \"age\": 30,\n    \"name\": \"John\"\n}",
+    "form_fields": [
+        {
+            "name": "input_string",
+            "type": "text_area",
+            "label": "Input JSON:"
+        }
+    ]
 }
