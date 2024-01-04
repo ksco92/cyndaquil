@@ -11,6 +11,15 @@ with open("../ui_templates/main_template.html") as f:
 with open("../ui_templates/index_template.html") as f:
     index_template = f.read()
 
+drop_down_template = """
+<label for="{0}">{1}</label>
+<select id="{0}">
+{2}
+</select>
+"""
+
+drop_down_options_template = """<option value="{0}">{0}</option>"""
+
 bullet_list_template = """
 <ul>
 {0}
@@ -48,17 +57,26 @@ for file in glob.glob("../lib/configs/lambdas/*.json"):
         if field["type"] == "text_area":
             html_fields.append(text_area_template.format(field["name"], field["label"]))
 
-    full_form = form_template.format("\n".join(html_fields))
-    function_template = main_template.replace("FUNCTION_NAME", function_name)
-    function_template = function_template.replace("FULL_FORM", full_form)
-    function_template = function_template.replace("FORM_DATA", form_data)
+        if field["type"] == "drop_down":
+            html_fields.append(drop_down_template.format(
+                field["name"],
+                field["label"],
+                "\n".join([drop_down_options_template.format(i) for i in field["drop_down_options"]])),
+            )
 
-    with open(f"../ui_compiled/{function_name}.html", "w") as f:
-        f.write(function_template)
+        full_form = form_template.format("\n".join(html_fields))
+        function_template = main_template.replace("FUNCTION_NAME", function_name)
+        function_template = function_template.replace("FULL_FORM", full_form)
+        function_template = function_template.replace("FORM_DATA", form_data)
 
-page_list = "\n".join([bullet_list_item_template.format(i) for i in all_function_names])
-new_index = bullet_list_template.format(page_list)
-new_index = index_template.replace("PAGE_LIST", new_index)
+        with open(f"../ui_compiled/{function_name}.html", "w") as f:
+            f.write(function_template)
 
-with open("../ui_compiled/index.html", "w") as f:
-    f.write(new_index)
+    page_list = "\n".join([bullet_list_item_template.format(i) for i in all_function_names])
+    new_index = bullet_list_template.format(page_list)
+    new_index = index_template.replace("PAGE_LIST", new_index)
+
+    with open("../ui_compiled/index.html", "w") as f:
+        f.write(new_index)
+
+# {"b":"1","a":"2"}

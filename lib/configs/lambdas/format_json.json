@@ -10,6 +10,25 @@
             "name": "input_string",
             "type": "text_area",
             "label": "Input JSON:"
+        },
+        {
+            "name": "indent",
+            "type": "drop_down",
+            "label": "Indent:",
+            "drop_down_options": [
+                2,
+                4,
+                8
+            ]
+        },
+        {
+            "name": "sort_keys",
+            "type": "drop_down",
+            "label": "Sort keys:",
+            "drop_down_options": [
+                true,
+                false
+            ]
         }
     ]
 }

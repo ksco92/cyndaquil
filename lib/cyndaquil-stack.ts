@@ -122,8 +122,8 @@ export default class CyndaquilStack extends Stack {
             const myFunction = new Function(this, functionMetadata.functionName, {
                 functionName: `cyndaquil_${functionMetadata.functionName}`,
                 runtime: Runtime.PYTHON_3_11,
-                code: Code.fromAsset('src/lambdas'),
-                handler: `${functionMetadata.functionName}.${functionMetadata.functionName}`,
+                code: Code.fromAsset('src'),
+                handler: `lambdas.${functionMetadata.functionName}.${functionMetadata.functionName}`,
                 memorySize: 128,
                 timeout: Duration.seconds(5),
                 vpc,
