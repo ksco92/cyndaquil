@@ -1,0 +1,12 @@
+# Linter
+isort
+flake8
+flake8-annotations
+flake8-docstrings
+coverage
+black
+
+# App
+pytest
+requests
+boto3

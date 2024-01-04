@@ -1,0 +1,6 @@
+{
+    "test_event": {
+        "strings": "\na\nb\nc\nd\ne\n"
+    },
+    "expected_result": "in ('a','b','c','d','e')"
+}

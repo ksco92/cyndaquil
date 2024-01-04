@@ -1,0 +1,8 @@
+{
+    "test_event": {
+        "indent": 4,
+        "input_string": "{\"name\": \"John\", \"age\": 30}",
+        "sort_keys": true
+    },
+    "expected_result": "{\n    \"age\": 30,\n    \"name\": \"John\"\n}"
+}
