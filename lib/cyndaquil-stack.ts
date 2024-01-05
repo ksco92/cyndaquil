@@ -1,6 +1,10 @@
-import {Duration, RemovalPolicy, Stack, StackProps,} from 'aws-cdk-lib';
+import {
+    Duration, RemovalPolicy, Stack, StackProps,
+} from 'aws-cdk-lib';
 import {Construct} from 'constructs';
-import {IpAddresses, SecurityGroup, SubnetType, Vpc,} from 'aws-cdk-lib/aws-ec2';
+import {
+    IpAddresses, SecurityGroup, SubnetType, Vpc,
+} from 'aws-cdk-lib/aws-ec2';
 import {Code, Function, Runtime} from 'aws-cdk-lib/aws-lambda';
 import {readdirSync} from 'fs';
 import {ManagedPolicy, Role, ServicePrincipal} from 'aws-cdk-lib/aws-iam';
@@ -20,8 +24,9 @@ import {
 import {S3Origin} from 'aws-cdk-lib/aws-cloudfront-origins';
 import {BucketDeployment, Source} from 'aws-cdk-lib/aws-s3-deployment';
 import {Key} from 'aws-cdk-lib/aws-kms';
-import FunctionMetadata from './functionMetadata';
 import path = require('path');
+import FunctionMetadata from './functionMetadata';
+import domainName from './configs/domainName';
 
 export default class CyndaquilStack extends Stack {
     constructor(scope: Construct, id: string, props?: StackProps) {
@@ -62,9 +67,8 @@ export default class CyndaquilStack extends Stack {
         /// ////////////////////////////////////////////
         // API Gateway
 
-        const publicHostedZone = PublicHostedZone.fromPublicHostedZoneAttributes(this, 'PublicHostedZone', {
-            hostedZoneId: 'Z0895490YL00K7TNILKB',
-            zoneName: 'webutils.xyz',
+        const publicHostedZone = PublicHostedZone.fromLookup(this, 'PublicHostedZone', {
+            domainName,
         });
 
         const certificate = new Certificate(this, 'APIGCertificate', {
@@ -189,7 +193,7 @@ export default class CyndaquilStack extends Stack {
             certificate,
             defaultRootObject: 'index.html',
             domainNames: [
-                'webutils.xyz',
+                domainName,
             ],
             minimumProtocolVersion: SecurityPolicyProtocol.TLS_V1_2_2021,
             errorResponses: [
@@ -224,7 +228,7 @@ export default class CyndaquilStack extends Stack {
         });
 
         new ARecord(this, 'SiteAliasRecord', {
-            recordName: 'webutils.xyz',
+            recordName: domainName,
             target: RecordTarget.fromAlias(new CloudFrontTarget(distribution)),
             zone: publicHostedZone,
         });

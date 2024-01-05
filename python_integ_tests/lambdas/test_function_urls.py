@@ -6,6 +6,8 @@ import json
 import requests
 from botocore.client import BaseClient
 
+from utils.get_domain_name import get_domain_name
+
 
 def test_functions(lambda_client: BaseClient) -> None:
     """
@@ -14,7 +16,7 @@ def test_functions(lambda_client: BaseClient) -> None:
     :param lambda_client: Main client for Lambda operations.
     :return:
     """
-    endpoint = "https://api.webutils.xyz"
+    endpoint = f"https://api.{get_domain_name()}"
     for file in glob.glob("../lib/configs/lambdas/*.json"):
         with open(file) as f:
             function_metadata = json.load(f)

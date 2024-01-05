@@ -3,6 +3,8 @@
 import glob
 import json
 
+from utils.get_domain_name import get_domain_name
+
 all_function_names = []
 
 with open("../ui_templates/main_template.html") as f:
@@ -68,6 +70,7 @@ for file in glob.glob("../lib/configs/lambdas/*.json"):
         function_template = main_template.replace("FUNCTION_NAME", function_name)
         function_template = function_template.replace("FULL_FORM", full_form)
         function_template = function_template.replace("FORM_DATA", form_data)
+        function_template = function_template.replace("DOMAIN_NAME", get_domain_name())
 
         with open(f"../ui_compiled/{function_name}.html", "w") as f:
             f.write(function_template)

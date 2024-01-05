@@ -14,7 +14,6 @@ def query_in_clause_generator(event: dict, __: dict) -> dict:
     :param __: AWS context of the function.
     :return: The formatted list of strings.
     """
-
     try:
         message = json.loads(event["body"])
         strings = message["strings"]
@@ -28,7 +27,7 @@ def query_in_clause_generator(event: dict, __: dict) -> dict:
             "headers": default_response_headers(),
         }
 
-    except Exception:
+    except:
         return {
             "isBase64Encoded": False,
             "statusCode": 500,
