@@ -158,7 +158,7 @@ export default class CyndaquilStack extends Stack {
         const websiteBucketKey = new Key(this, 'WebsiteBucketKey');
 
         const websiteBucket = new Bucket(this, 'WebsiteBucket', {
-            bucketName: 'cyndaquil-website-bucket',
+            bucketName: `cyndaquil-website-bucket-${this.account}`,
             encryptionKey: websiteBucketKey,
             publicReadAccess: false,
             blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
