@@ -81,7 +81,7 @@ export default class PipelineStack extends Stack {
                             'echo Generating HTML',
                             'pwd',
                             'ls -llah',
-                            'python3 ./src/generate_html.py.',
+                            'python3 ./src/generate_html.py',
                             'echo Running linters',
                             './scripts/lint.sh && npm run lint',
                             'echo Deploying CDK stacks',
