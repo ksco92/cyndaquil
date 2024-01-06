@@ -120,6 +120,7 @@ export default class CyndaquilStack extends Stack {
             .filter((dirent) => dirent.name.includes('.json'))
             .map((dirent) => `lib/configs/lambdas/${dirent.name}`);
 
+        // Make a function for each JSON config
         functionMetadataLocations.forEach((functionMetadataLocation) => {
             const functionMetadata = new FunctionMetadata(functionMetadataLocation);
 
@@ -150,12 +151,15 @@ export default class CyndaquilStack extends Stack {
         /// ////////////////////////////////////////////
         // UI
 
+        /// ////////////////////////////////////////////
+        /// ////////////////////////////////////////////
+        // S3 bucket that holds the content
+
         const websiteBucketKey = new Key(this, 'WebsiteBucketKey');
 
         const websiteBucket = new Bucket(this, 'WebsiteBucket', {
             bucketName: 'cyndaquil-website-bucket',
             encryptionKey: websiteBucketKey,
-            // encryption: BucketEncryption.S3_MANAGED,
             publicReadAccess: false,
             blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
             removalPolicy: RemovalPolicy.DESTROY,
@@ -163,6 +167,10 @@ export default class CyndaquilStack extends Stack {
         });
 
         websiteBucket.grantRead(new ServicePrincipal('cloudfront.amazonaws.com'));
+
+        /// ////////////////////////////////////////////
+        /// ////////////////////////////////////////////
+        // Cloudfront section
 
         const originAccessControl = new CfnOriginAccessControl(this, 'OriginAccessControl', {
             originAccessControlConfig: {
@@ -172,22 +180,6 @@ export default class CyndaquilStack extends Stack {
                 signingProtocol: 'sigv4',
             },
         });
-
-        // const originAccessIdentity = new OriginAccessIdentity(this, 'OriginAccessIdentity');
-
-        // websiteBucket.addToResourcePolicy(new PolicyStatement({
-        //     actions: [
-        //         's3:GetObject',
-        //     ],
-        //     resources: [
-        //         websiteBucket.arnForObjects('*'),
-        //     ],
-        //     principals: [
-        //         // eslint-disable-next-line max-len
-        //         new CanonicalUserPrincipal(originAccessIdentity.
-        //         cloudFrontOriginAccessIdentityS3CanonicalUserId),
-        //     ],
-        // }));
 
         const distribution = new Distribution(this, 'SiteDistribution', {
             certificate,
@@ -216,6 +208,7 @@ export default class CyndaquilStack extends Stack {
         cfnDistribution.addPropertyOverride('DistributionConfig.Origins.0.OriginAccessControlId', originAccessControl.getAtt('Id'));
         cfnDistribution.addOverride('Properties.DistributionConfig.Origins.0.S3OriginConfig.OriginAccessIdentity', '');
 
+        // This puts the HTML in the S3 bucket
         new BucketDeployment(this, 'DeployWithInvalidation', {
             sources: [
                 Source.asset(path.join(__dirname, '../ui_compiled')),

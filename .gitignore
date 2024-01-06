@@ -9,5 +9,5 @@ cdk.out
 
 venv
 .idea
-
+cdk.context.json
 ui_compiled/*.html

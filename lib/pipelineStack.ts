@@ -23,7 +23,7 @@ export default class PipelineStack extends Stack {
             owner: 'ksco92',
             repo: 'cyndaquil',
             output: sourceOutput,
-            connectionArn: 'arn:aws:codestar-connections:us-east-1:439424284320:connection/aaf7cfc0-0154-4a99-b1f8-eca9c2d73697',
+            connectionArn: `arn:aws:codestar-connections:${this.region}:${this.account}:connection/aaf7cfc0-0154-4a99-b1f8-eca9c2d73697`,
         });
 
         /// ////////////////////////////////////////////
@@ -32,7 +32,7 @@ export default class PipelineStack extends Stack {
         /// ////////////////////////////////////////////
         // Unit test stage
 
-        const buildProject = new PipelineProject(this, 'PythonUnitTestBuildProject', {
+        const unitTestsBuildProject = new PipelineProject(this, 'PythonUnitTestBuildProject', {
             buildSpec: BuildSpec.fromObject({
                 version: '0.2',
                 phases: {
@@ -44,7 +44,7 @@ export default class PipelineStack extends Stack {
                     },
                     build: {
                         commands: [
-                            'pwd',
+                            'echo Running unit tests',
                             'pytest python_unit_tests/',
                         ],
                     },
@@ -52,9 +52,49 @@ export default class PipelineStack extends Stack {
             }),
         });
 
-        const buildAction = new CodeBuildAction({
+        const unitTestsBuildAction = new CodeBuildAction({
             actionName: 'PythonUnitTests',
-            project: buildProject,
+            project: unitTestsBuildProject,
+            input: sourceOutput,
+        });
+
+        /// ////////////////////////////////////////////
+        /// ////////////////////////////////////////////
+        /// ////////////////////////////////////////////
+        /// ////////////////////////////////////////////
+        // Unit test stage
+
+        const generateHtmlAndDeployBuildProject = new PipelineProject(this, 'GenerateHtmlAndDeployBuildProject', {
+            buildSpec: BuildSpec.fromObject({
+                version: '0.2',
+                phases: {
+                    install: {
+                        commands: [
+                            'echo Installing Python dependencies',
+                            'pip install -r requirements.txt',
+                            'echo Installing npm dependencies',
+                            'npm install',
+                        ],
+                    },
+                    build: {
+                        commands: [
+                            'echo Generating HTML',
+                            'pwd',
+                            'ls -llah',
+                            'python3 ./src/generate_html.py.',
+                            'echo Running linters',
+                            './scripts/lint.sh && npm run lint',
+                            'echo Deploying CDK stacks',
+                            'cdk deploy --all',
+                        ],
+                    },
+                },
+            }),
+        });
+
+        const generateHtmlAndDeployBuildAction = new CodeBuildAction({
+            actionName: 'GenerateHtmlAndDeploy',
+            project: generateHtmlAndDeployBuildProject,
             input: sourceOutput,
         });
 
@@ -75,7 +115,13 @@ export default class PipelineStack extends Stack {
                 {
                     stageName: 'UnitTests',
                     actions: [
-                        buildAction,
+                        unitTestsBuildAction,
+                    ],
+                },
+                {
+                    stageName: 'GenerateHtmlAndDeploy',
+                    actions: [
+                        generateHtmlAndDeployBuildAction,
                     ],
                 },
             ],
