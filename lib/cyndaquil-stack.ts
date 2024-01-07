@@ -6,7 +6,6 @@ import {
     IpAddresses, SecurityGroup, SubnetType, Vpc,
 } from 'aws-cdk-lib/aws-ec2';
 import {Code, Function, Runtime} from 'aws-cdk-lib/aws-lambda';
-import {readdirSync} from 'fs';
 import {ManagedPolicy, Role, ServicePrincipal} from 'aws-cdk-lib/aws-iam';
 import {Cors, LambdaIntegration, RestApi} from 'aws-cdk-lib/aws-apigateway';
 import {ARecord, PublicHostedZone, RecordTarget} from 'aws-cdk-lib/aws-route53';
@@ -27,6 +26,7 @@ import {Key} from 'aws-cdk-lib/aws-kms';
 import path = require('path');
 import FunctionMetadata from './functionMetadata';
 import domainName from './configs/domainName';
+import getFunctionMetadataLocations from './utils/getFunctionMetadataLocations';
 
 export default class CyndaquilStack extends Stack {
     constructor(scope: Construct, id: string, props?: StackProps) {
@@ -115,17 +115,14 @@ export default class CyndaquilStack extends Stack {
         /// ////////////////////////////////////////////
         // Functions
 
-        const functionMetadataLocations = readdirSync('lib/configs/lambdas/', {withFileTypes: true,})
-            .filter((dirent) => !dirent.isDirectory())
-            .filter((dirent) => dirent.name.includes('.json'))
-            .map((dirent) => `lib/configs/lambdas/${dirent.name}`);
+        const functionMetadataLocations = getFunctionMetadataLocations();
 
         // Make a function for each JSON config
         functionMetadataLocations.forEach((functionMetadataLocation) => {
             const functionMetadata = new FunctionMetadata(functionMetadataLocation);
 
             const myFunction = new Function(this, functionMetadata.functionName, {
-                functionName: `cyndaquil_${functionMetadata.functionName}`,
+                functionName: functionMetadata.functionName,
                 runtime: Runtime.PYTHON_3_11,
                 code: Code.fromAsset('src'),
                 handler: `lambdas.${functionMetadata.functionName}.${functionMetadata.functionName}`,
