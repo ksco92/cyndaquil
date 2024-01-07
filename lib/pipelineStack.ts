@@ -5,11 +5,30 @@ import {
     CodeBuildAction,
     CodeStarConnectionsSourceAction,
 } from 'aws-cdk-lib/aws-codepipeline-actions';
-import {BuildSpec, PipelineProject} from 'aws-cdk-lib/aws-codebuild';
+import {BuildSpec, LinuxBuildImage, PipelineProject} from 'aws-cdk-lib/aws-codebuild';
+import {
+    CompositePrincipal, ManagedPolicy, Role, ServicePrincipal,
+} from 'aws-cdk-lib/aws-iam';
 
 export default class PipelineStack extends Stack {
     constructor(scope: Construct, id: string, props?: StackProps) {
         super(scope, id, props);
+
+        /// ////////////////////////////////////////////
+        /// ////////////////////////////////////////////
+        /// ////////////////////////////////////////////
+        /// ////////////////////////////////////////////
+        // Pipeline role
+
+        const pipelineRole = new Role(this, 'PipelineRole', {
+            assumedBy: new CompositePrincipal(
+                new ServicePrincipal('codepipeline.amazonaws.com'),
+                new ServicePrincipal('codebuild.amazonaws.com')
+            ),
+            managedPolicies: [
+                ManagedPolicy.fromAwsManagedPolicyName('AdministratorAccess'),
+            ],
+        });
 
         /// ////////////////////////////////////////////
         /// ////////////////////////////////////////////
@@ -50,12 +69,17 @@ export default class PipelineStack extends Stack {
                     },
                 },
             }),
+            environment: {
+                buildImage: LinuxBuildImage.AMAZON_LINUX_2_5,
+            },
+            role: pipelineRole,
         });
 
         const unitTestsBuildAction = new CodeBuildAction({
             actionName: 'PythonUnitTests',
             project: unitTestsBuildProject,
             input: sourceOutput,
+            role: pipelineRole,
         });
 
         /// ////////////////////////////////////////////
@@ -74,6 +98,8 @@ export default class PipelineStack extends Stack {
                             'pip install -r requirements.txt',
                             'echo Installing npm dependencies',
                             'npm install',
+                            'echo Installing CDK CLI',
+                            'npm install -g aws-cdk',
                         ],
                     },
                     build: {
@@ -85,17 +111,22 @@ export default class PipelineStack extends Stack {
                             'echo Running linters',
                             './scripts/lint.sh && npm run lint',
                             'echo Deploying CDK stacks',
-                            'cdk deploy --all',
+                            'cdk deploy --all --require-approval never',
                         ],
                     },
                 },
             }),
+            environment: {
+                buildImage: LinuxBuildImage.AMAZON_LINUX_2_5,
+            },
+            role: pipelineRole,
         });
 
         const generateHtmlAndDeployBuildAction = new CodeBuildAction({
             actionName: 'GenerateHtmlAndDeploy',
             project: generateHtmlAndDeployBuildProject,
             input: sourceOutput,
+            role: pipelineRole,
         });
 
         /// ////////////////////////////////////////////
@@ -125,6 +156,7 @@ export default class PipelineStack extends Stack {
                     ],
                 },
             ],
+            role: pipelineRole,
         });
     }
 }
