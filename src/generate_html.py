@@ -41,7 +41,7 @@ form_template = """
 
 text_area_template = """
 \t<label for="{0}">{1}</label><br>
-\t<textarea id="{0}" name="{0}"></textarea><br>
+\t<textarea id="{0}" name="{0}" rows="7" cols="75"></textarea><br>
 """
 
 for file in glob.glob("./lib/configs/lambdas/*.json"):
