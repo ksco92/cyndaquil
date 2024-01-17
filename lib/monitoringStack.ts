@@ -5,17 +5,89 @@ import {
     AlarmWidget,
     ComparisonOperator,
     Dashboard,
+    GraphWidget,
     IWidget,
     MathExpression,
+    Metric,
     TreatMissingData,
 } from 'aws-cdk-lib/aws-cloudwatch';
 import {Function} from 'aws-cdk-lib/aws-lambda';
+import {Distribution} from 'aws-cdk-lib/aws-cloudfront';
 import getFunctionMetadataLocations from './utils/getFunctionMetadataLocations';
 import FunctionMetadata from './functionMetadata';
 
+interface MonitoringStackProps extends StackProps {
+    distribution: Distribution;
+}
+
 export default class MonitoringStack extends Stack {
-    constructor(scope: Construct, id: string, props?: StackProps) {
+    width = 7;
+
+    height = 5;
+
+    constructor(scope: Construct, id: string, props: MonitoringStackProps) {
         super(scope, id, props);
+
+        /// ////////////////////////////////////////////
+        /// ////////////////////////////////////////////
+        /// ////////////////////////////////////////////
+        /// ////////////////////////////////////////////
+        // CloudFront metrics
+
+        /// ////////////////////////////////////////////
+        /// ////////////////////////////////////////////
+        // Requests
+
+        const requestsMetric = new Metric({
+            metricName: 'Requests',
+            namespace: 'AWS/CloudFront',
+            dimensionsMap: {
+                DistributionId: props.distribution.distributionId,
+                Region: 'Global',
+            },
+            period: Duration.seconds(30),
+            statistic: 'Sum',
+        });
+
+        const requestsWidget = new GraphWidget({
+            width: this.width,
+            height: this.height,
+            left: [
+                requestsMetric,
+            ],
+        });
+
+        /// ////////////////////////////////////////////
+        /// ////////////////////////////////////////////
+        // Error rate
+
+        const requestsErrorMetric = new Metric({
+            metricName: 'TotalErrorRate',
+            namespace: 'AWS/CloudFront',
+            dimensionsMap: {
+                DistributionId: props.distribution.distributionId,
+                Region: 'Global',
+            },
+            period: Duration.seconds(30),
+            statistic: 'Sum',
+        });
+
+        const requestsErrorRateAlarm = new Alarm(this, 'cloud-front-requests-error-rate', {
+            metric: requestsErrorMetric,
+            threshold: 20,
+            evaluationPeriods: 5,
+            datapointsToAlarm: 5,
+            alarmName: 'cloud-front-requests-error-rate',
+            comparisonOperator: ComparisonOperator.GREATER_THAN_THRESHOLD,
+            treatMissingData: TreatMissingData.NOT_BREACHING,
+        });
+
+        const requestsErrorRateAlarmWidget = new AlarmWidget({
+            alarm: requestsErrorRateAlarm,
+            height: this.height,
+            width: this.width,
+            title: 'cloud-front-requests-error-rate',
+        });
 
         /// ////////////////////////////////////////////
         /// ////////////////////////////////////////////
@@ -126,6 +198,10 @@ export default class MonitoringStack extends Stack {
         new Dashboard(this, 'MainDashboard', {
             dashboardName: 'MainDashboard',
             widgets: [
+                [
+                    requestsWidget,
+                    requestsErrorRateAlarmWidget,
+                ],
                 [
                     ...lambdaSuccessRateWidgets,
                 ],

@@ -29,6 +29,8 @@ import domainName from './configs/domainName';
 import getFunctionMetadataLocations from './utils/getFunctionMetadataLocations';
 
 export default class CyndaquilStack extends Stack {
+    distribution: Distribution;
+
     constructor(scope: Construct, id: string, props?: StackProps) {
         super(scope, id, props);
 
@@ -178,7 +180,7 @@ export default class CyndaquilStack extends Stack {
             },
         });
 
-        const distribution = new Distribution(this, 'SiteDistribution', {
+        this.distribution = new Distribution(this, 'SiteDistribution', {
             certificate,
             defaultRootObject: 'index.html',
             domainNames: [
@@ -201,7 +203,7 @@ export default class CyndaquilStack extends Stack {
             },
         });
 
-        const cfnDistribution = distribution.node.defaultChild as CfnDistribution;
+        const cfnDistribution = this.distribution.node.defaultChild as CfnDistribution;
         cfnDistribution.addPropertyOverride('DistributionConfig.Origins.0.OriginAccessControlId', originAccessControl.getAtt('Id'));
         cfnDistribution.addOverride('Properties.DistributionConfig.Origins.0.S3OriginConfig.OriginAccessIdentity', '');
 
@@ -211,7 +213,7 @@ export default class CyndaquilStack extends Stack {
                 Source.asset(path.join(__dirname, '../ui_compiled')),
             ],
             destinationBucket: websiteBucket,
-            distribution,
+            distribution: this.distribution,
             distributionPaths: [
                 '/*',
             ],
@@ -219,7 +221,7 @@ export default class CyndaquilStack extends Stack {
 
         new ARecord(this, 'SiteAliasRecord', {
             recordName: domainName,
-            target: RecordTarget.fromAlias(new CloudFrontTarget(distribution)),
+            target: RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)),
             zone: publicHostedZone,
         });
     }

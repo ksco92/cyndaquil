@@ -27,6 +27,7 @@ const monitoringStack = new MonitoringStack(app, 'MonitoringStack', {
         account: process.env.CDK_DEFAULT_ACCOUNT,
         region: process.env.CDK_DEFAULT_REGION,
     },
+    distribution: cyndaquilStack.distribution,
 });
 
 monitoringStack.addDependency(cyndaquilStack);
