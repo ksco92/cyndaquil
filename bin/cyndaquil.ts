@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
-import CyndaquilStack from '../lib/cyndaquil-stack';
+import CyndaquilStack from '../lib/cyndaquilStack';
 import PipelineStack from '../lib/pipelineStack';
 import MonitoringStack from '../lib/monitoringStack';
 

@@ -2,9 +2,6 @@ import {
     Duration, RemovalPolicy, Stack, StackProps,
 } from 'aws-cdk-lib';
 import {Construct} from 'constructs';
-import {
-    IpAddresses, SecurityGroup, SubnetType, Vpc,
-} from 'aws-cdk-lib/aws-ec2';
 import {Code, Function, Runtime} from 'aws-cdk-lib/aws-lambda';
 import {ManagedPolicy, Role, ServicePrincipal} from 'aws-cdk-lib/aws-iam';
 import {Cors, LambdaIntegration, RestApi} from 'aws-cdk-lib/aws-apigateway';
@@ -38,21 +35,6 @@ export default class CyndaquilStack extends Stack {
         /// ////////////////////////////////////////////
         /// ////////////////////////////////////////////
         /// ////////////////////////////////////////////
-        // Networking settings
-
-        const vpc = new Vpc(this, 'MainVpc', {
-            ipAddresses: IpAddresses.cidr('10.0.0.0/16'),
-        });
-
-        const lambdaSecurityGroup = new SecurityGroup(this, 'LambdaSecurityGroup', {
-            vpc,
-            securityGroupName: 'LambdaSecurityGroup',
-        });
-
-        /// ////////////////////////////////////////////
-        /// ////////////////////////////////////////////
-        /// ////////////////////////////////////////////
-        /// ////////////////////////////////////////////
         // Lambda role
 
         const lambdaRole = new Role(this, 'LambdaExecutionRole', {
@@ -61,6 +43,7 @@ export default class CyndaquilStack extends Stack {
                 ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaVPCAccessExecutionRole'),
                 ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole'),
             ],
+            roleName: 'LambdaExecutionRole',
         });
 
         /// ////////////////////////////////////////////
@@ -130,13 +113,6 @@ export default class CyndaquilStack extends Stack {
                 handler: `lambdas.${functionMetadata.functionName}.${functionMetadata.functionName}`,
                 memorySize: 128,
                 timeout: Duration.seconds(5),
-                vpc,
-                vpcSubnets: {
-                    subnetType: SubnetType.PRIVATE_WITH_EGRESS,
-                },
-                securityGroups: [
-                    lambdaSecurityGroup,
-                ],
                 role: lambdaRole,
             });
 

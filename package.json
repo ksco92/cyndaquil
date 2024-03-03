@@ -7,9 +7,9 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
-    "test": "jest",
+    "test": "cdk synth && jest",
     "cdk": "cdk",
-    "lint": "eslint --ext .ts lib/ --fix --ignore-pattern \"*.d.ts\" && eslint --ext .ts bin/ --fix --ignore-pattern \"*.d.ts\""
+    "lint": "eslint --ext .ts lib/ --fix --ignore-pattern \"*.d.ts\" && eslint --ext .ts bin/ --fix --ignore-pattern \"*.d.ts\" && eslint --ext .ts test/ --fix --ignore-pattern \"*.d.ts\""
   },
   "devDependencies": {
     "@types/jest": "^29.5.5",

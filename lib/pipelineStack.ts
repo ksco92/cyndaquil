@@ -51,7 +51,46 @@ export default class PipelineStack extends Stack {
         /// ////////////////////////////////////////////
         // Unit test stage
 
-        const unitTestsBuildProject = new PipelineProject(this, 'PythonUnitTestBuildProject', {
+        /// ////////////////////////////////////////////
+        /// ////////////////////////////////////////////
+        // CDK
+
+        const cdkUnitTestsBuildProject = new PipelineProject(this, 'CDKUnitTestBuildProject', {
+            buildSpec: BuildSpec.fromObject({
+                version: '0.2',
+                phases: {
+                    install: {
+                        commands: [
+                            'echo Installing CDK dependencies',
+                            'npm i',
+                        ],
+                    },
+                    build: {
+                        commands: [
+                            'echo Running unit tests',
+                            'npm run test',
+                        ],
+                    },
+                },
+            }),
+            environment: {
+                buildImage: LinuxBuildImage.AMAZON_LINUX_2_5,
+            },
+            role: pipelineRole,
+        });
+
+        const cdkUnitTestsBuildAction = new CodeBuildAction({
+            actionName: 'CDKUnitTests',
+            project: cdkUnitTestsBuildProject,
+            input: sourceOutput,
+            role: pipelineRole,
+        });
+
+        /// ////////////////////////////////////////////
+        /// ////////////////////////////////////////////
+        // Python
+
+        const pythonUnitTestsBuildProject = new PipelineProject(this, 'PythonUnitTestBuildProject', {
             buildSpec: BuildSpec.fromObject({
                 version: '0.2',
                 phases: {
@@ -75,9 +114,9 @@ export default class PipelineStack extends Stack {
             role: pipelineRole,
         });
 
-        const unitTestsBuildAction = new CodeBuildAction({
+        const pythonUnitTestsBuildAction = new CodeBuildAction({
             actionName: 'PythonUnitTests',
-            project: unitTestsBuildProject,
+            project: pythonUnitTestsBuildProject,
             input: sourceOutput,
             role: pipelineRole,
         });
@@ -86,7 +125,7 @@ export default class PipelineStack extends Stack {
         /// ////////////////////////////////////////////
         /// ////////////////////////////////////////////
         /// ////////////////////////////////////////////
-        // Unit test stage
+        // Generate HTML
 
         const generateHtmlAndDeployBuildProject = new PipelineProject(this, 'GenerateHtmlAndDeployBuildProject', {
             buildSpec: BuildSpec.fromObject({
@@ -146,7 +185,8 @@ export default class PipelineStack extends Stack {
                 {
                     stageName: 'UnitTests',
                     actions: [
-                        unitTestsBuildAction,
+                        pythonUnitTestsBuildAction,
+                        cdkUnitTestsBuildAction,
                     ],
                 },
                 {
